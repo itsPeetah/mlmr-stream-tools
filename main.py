@@ -80,7 +80,6 @@ def fetch_bounties():
 
     result = []
     if "type" in request.args:
-        print("type in args")
         request_type = request.args["type"]
         match request_type:
             case "bans":
