@@ -1,4 +1,5 @@
+requests
+flask
+irc
 python-dotenv
-discord.py
-audioop-lts
-twitchio
+websockets
