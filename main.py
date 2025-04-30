@@ -2,10 +2,10 @@ from os import getenv
 import threading
 
 from dotenv import load_dotenv
-from flask import Flask, jsonify, request
+from flask import Flask, Response, jsonify, request
 
 from src import Twitch
-from src.channelpoints import bounties as Bounties
+from src.channelpoints import bounties as Bounties, tts as TTS
 
 load_dotenv()
 
@@ -59,9 +59,9 @@ def hello_world():
 
 ## TWITCH HANDLERS ##
 
-
 bounties = Bounties.BountyTracker("In-Game Bounty", "BOUNTY", "./tmp/bounties.tsv")
 bans = Bounties.BountyTracker("In-Game Ban", "BAN", "./tmp/bans.tsv")
+tts = TTS.ScuffedTTS("TTS Message", "./tmp/ttslog.tsv", "./tmp/latest.mp3")
 
 
 def on_chat_msg(msg: Twitch.TwitchIRCMessage):
@@ -73,10 +73,12 @@ def on_chat_msg(msg: Twitch.TwitchIRCMessage):
 def on_channel_point_redemption(redemption: Twitch.ChannelPointRedemption):
     bounties.handle_redemption(redemption)
     bans.handle_redemption(redemption)
+    tts.handle_redemption(redemption)
 
 
 @flask_app.get("/channelpoints/bounties")  # ?type=<bounties?, bans, both>
 def fetch_bounties():
+    """this could be a ws event"""
 
     result = []
     if "type" in request.args:
@@ -95,6 +97,14 @@ def fetch_bounties():
     result = sorted(result, key=lambda x: x.split("\t")[-1])
 
     return jsonify({"bounties": result})
+
+
+@flask_app.get("/scuffedtts/latest")
+def fetch_tts():
+    """this could be a ws event"""
+
+    result = tts.get_latest_fifo()
+    return jsonify({"data": result})
 
 
 ## MAIN ##
