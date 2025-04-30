@@ -58,7 +58,7 @@ class TwitchIRCClient:
                 if resp.startswith("PING"):
                     self.sock.send("PONG :tmi.twitch.tv\r\n".encode("utf-8"))
                 elif "PRIVMSG" in resp:
-                    print(resp)
+                    # print(resp)
                     username = resp.split("!", 1)[0][1:]
                     message = resp.split("PRIVMSG", 1)[1].split(":", 1)[1]
                     handle_message(TwitchIRCMessage(username, message))
