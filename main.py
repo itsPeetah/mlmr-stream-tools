@@ -4,7 +4,7 @@ import threading
 from dotenv import load_dotenv
 from flask import Flask, Response, jsonify, request
 
-from src import Twitch
+from src import Twitch, FlaskApp
 from src.channelpoints import bounties as Bounties, tts as TTS
 
 load_dotenv()
@@ -13,6 +13,8 @@ load_dotenv()
 
 CLIENT_ID = getenv("TWITCH_CLIENT_ID")
 CLIENT_SECRET = getenv("TWITCH_CLIENT_SECRET")
+
+webapp_settings = FlaskApp.WebAppSettings(name=__name__, port=8080)
 
 auth_settings = Twitch.TwitchOAuthSettings(
     client_id=CLIENT_ID,
@@ -42,18 +44,19 @@ eventsub_settings = Twitch.TwitchEventSubSettings(
 ## INITIALIZATION ##
 
 
-flask_app = Flask(__name__)
-auth_client = Twitch.TwitchOAuthClient(auth_settings, flask_app)
+webapp = FlaskApp.WebApp(webapp_settings)
+auth_client = Twitch.TwitchOAuthClient(auth_settings)
 irc_client = Twitch.TwitchIRCClient(irc_settings)
 api_client = Twitch.TwitchAPIClient(api_settings)
 eventsub_client = Twitch.TwitchEventSubClient(eventsub_settings)
 
+auth_client.attach_to_flask_app(webapp)
 
 ## FLASK APP SETUP
 
 
-@flask_app.get("/hello")
-def hello_world():
+@webapp.flask_app.get("/hello")
+def hello():
     return "Hello, world!"
 
 
@@ -76,7 +79,7 @@ def on_channel_point_redemption(redemption: Twitch.ChannelPointRedemption):
     tts.handle_redemption(redemption)
 
 
-@flask_app.get("/channelpoints/bounties")  # ?type=<bounties?, bans, both>
+@webapp.flask_app.get("/channelpoints/bounties")  # ?type=<bounties?, bans, both>
 def fetch_bounties():
     """this could be a ws event"""
 
@@ -99,7 +102,7 @@ def fetch_bounties():
     return jsonify({"bounties": result})
 
 
-@flask_app.get("/scuffedtts/latest")
+@webapp.flask_app.get("/scuffedtts/latest")
 def fetch_tts():
     """this could be a ws event"""
 
@@ -111,8 +114,7 @@ def fetch_tts():
 
 
 def main():
-    flask_app_thread = threading.Thread(target=lambda: flask_app.run(port=8080))
-    flask_app_thread.start()
+    webapp.start()
 
     # RUN TWITCH
     access_token = auth_client.get_access_token()

@@ -5,6 +5,8 @@ import threading
 from flask import Flask, request
 import requests
 
+from src.webapp.webapp import WebApp
+
 
 @dataclass
 class TwitchOAuthSettings:
@@ -15,10 +17,9 @@ class TwitchOAuthSettings:
 
 
 class TwitchOAuthClient:
-    def __init__(self, settings: TwitchOAuthSettings, flask_app: Flask):
+    def __init__(self, settings: TwitchOAuthSettings):
         self.settings = settings
         self.auth_code = None
-        self._attach_to_flask_app(flask_app)
 
     def _get_auth_url(self):
 
@@ -47,11 +48,11 @@ class TwitchOAuthClient:
         response = requests.post(url, data=data)
         return response.json()
 
-    def _attach_to_flask_app(self, flask_app: Flask):
+    def attach_to_flask_app(self, webapp: WebApp):
 
         auth_route = self.settings.redirect_uri.split("/")[-1]
 
-        @flask_app.route(f"/{auth_route}")
+        @webapp.flask_app.route(f"/{auth_route}")
         def handle_redirect():
             self.auth_code = request.args.get("code")
             return "Authorization successful! You can close this tab."
