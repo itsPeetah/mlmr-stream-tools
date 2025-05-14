@@ -3,6 +3,7 @@ import threading
 
 from dotenv import load_dotenv
 from flask import Flask, Response, jsonify, request
+from flask_socketio import emit, send
 
 from src import Twitch, FlaskApp
 from src.channelpoints import bounties as Bounties, tts as TTS
@@ -108,6 +109,18 @@ def fetch_tts():
 
     result = tts.get_latest_fifo()
     return jsonify({"data": result})
+
+
+@webapp.socketio.on("message")
+def handle_message(msg):
+    print(f"Received message: {msg}")
+    send(f"Server received: {msg}", broadcast=True)
+
+
+@webapp.socketio.on("custom_event")
+def handle_custom_event(data):
+    print(f"Custom event data: {data}")
+    emit("response_event", {"data": f"Hello {data['name']}!"})
 
 
 ## MAIN ##

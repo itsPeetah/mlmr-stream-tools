@@ -4,3 +4,4 @@ irc
 python-dotenv
 websockets
 gTTS
+flask_socketio
