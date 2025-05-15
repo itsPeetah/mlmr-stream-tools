@@ -72,11 +72,10 @@ class TwitchIRCClient:
         self._listen_thread.start()
 
     def _handle_message(self, msg: TwitchIRCMessage):
-        if msg.content[0] == "!":
-            first = msg.content[1:].split(" ")[0]
-            if first in self._on_command_listeners:
-                for func in self._on_command_listeners[first]:
-                    func(msg)
+        first = msg.content.split(" ")[0]
+        if first.strip() in self._on_command_listeners:
+            for func in self._on_command_listeners[first]:
+                func(msg)
         else:
             for func in self._on_message_listeners:
                 func(msg)
@@ -92,7 +91,7 @@ class TwitchIRCClient:
         def decorator(func):
             if command not in self._on_command_listeners:
                 self._on_command_listeners[command] = []
-            self._on_command_listeners.append(func)
+            self._on_command_listeners[command].append(func)
             return func
 
         return decorator

@@ -1,48 +1,10 @@
-from os import getenv
-
-from dotenv import load_dotenv
 from flask import jsonify, request
 from flask_socketio import emit, send
 
-from src.core import Twitch, FlaskApp
+from src.core import Twitch
 from src.core.defaultrig import DefaultRig, DefaultRigSettings
 from src.extensions import ChannelPoints
-
-load_dotenv()
-
-## TWITCH SETTINGS ##
-
-CLIENT_ID = getenv("TWITCH_CLIENT_ID")
-CLIENT_SECRET = getenv("TWITCH_CLIENT_SECRET")
-
-webapp_settings = FlaskApp.WebAppSettings(name=__name__, port=8080)
-
-auth_settings = Twitch.TwitchOAuthSettings(
-    client_id=CLIENT_ID,
-    client_secret=CLIENT_SECRET,
-    redirect_uri="http://localhost:8080/oauth",
-    scopes=[
-        "chat:read",
-        "chat:edit",
-        "channel:read:redemptions",
-        "channel:manage:redemptions",
-    ],
-)
-
-irc_settings = Twitch.TwitchIRCSettings(
-    hostname="irc.chat.twitch.tv", port=6667, bot_nick="malimore", channel="malimore"
-)
-
-api_settings = Twitch.TwitchAPISettings(
-    client_id=CLIENT_ID,
-)
-
-eventsub_settings = Twitch.TwitchEventSubSettings(
-    client_id=CLIENT_ID,
-    eventsub_ws_url="wss://eventsub.wss.twitch.tv/ws",
-)
-
-## INITIALIZATION ##
+from main__settings import *
 
 default_rig = DefaultRig(
     DefaultRigSettings(
@@ -76,8 +38,12 @@ tts = ChannelPoints.tts.ScuffedTTS(
 @default_rig.irc_client.on_message()
 def on_chat_msg(msg: Twitch.TwitchIRCMessage):
     print(f"Message from {msg.sender}: {msg.content}---")
-    if msg.content.strip() == "!hi":
-        default_rig.irc_client.send_message_to_chat(f"Hello, {msg.sender}!")
+
+
+@default_rig.irc_client.on_command("!hi")
+def on_hi_command(msg: Twitch.TwitchIRCMessage):
+    print(f"Command from {msg.sender}: {msg.content}---")
+    default_rig.irc_client.send_message_to_chat(f"Hello, {msg.sender}!")
 
 
 @default_rig.eventsub_client.channel_point_redemption()
