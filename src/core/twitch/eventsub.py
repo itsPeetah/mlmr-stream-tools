@@ -52,7 +52,7 @@ class TwitchEventSubClient:
         r = requests.post(url, headers=headers, json=payload)
         return r.json()["data"][0]["id"]
 
-    def channel_point_redemption(self):
+    def channel_point_redemption(self, reward_title: str):
         def decorator(func):
             if (
                 TwitchEventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION
@@ -63,7 +63,8 @@ class TwitchEventSubClient:
                 ] = []
             self._event_handlers[
                 TwitchEventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION
-            ].append(func)
+            ].append((reward_title, func))
+            return func
 
         return decorator
 
@@ -101,9 +102,9 @@ class TwitchEventSubClient:
         sub_type = data["metadata"]["subscription_type"]
         event = data["payload"]["event"]
         match sub_type:
-            case "channel.channel_points_custom_reward_redemption.add":
+            case TwitchEventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION:
                 print(
-                    f"[EventSub] [Channel Points] {event['user_name']} redeemed {event['reward']['title']}"
+                    f"[EventSub - Channel Points] {event['user_name']} redeemed {event['reward']['title']}"
                 )
                 redemption = ChannelPointRedemption(
                     user_name=event["user_name"],
@@ -114,5 +115,6 @@ class TwitchEventSubClient:
                     reward_cost=event["reward"]["cost"],
                     timestamp=event["redeemed_at"],
                 )
-                for func in self._event_handlers[sub_type]:
-                    func(redemption)
+                for title, func in self._event_handlers[sub_type]:
+                    if title == redemption.reward_name:
+                        func(redemption)

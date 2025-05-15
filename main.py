@@ -46,10 +46,18 @@ def on_hi_command(msg: Twitch.TwitchIRCMessage):
     default_rig.irc_client.send_message_to_chat(f"Hello, {msg.sender}!")
 
 
-@default_rig.eventsub_client.channel_point_redemption()
-def on_channel_point_redemption(redemption: Twitch.ChannelPointRedemption):
+@default_rig.eventsub_client.channel_point_redemption("In-Game Bounty")
+def handle_bounties(redemption: Twitch.ChannelPointRedemption):
     bounties.handle_redemption(redemption)
+
+
+@default_rig.eventsub_client.channel_point_redemption("In-Game Ban")
+def handle_bans(redemption: Twitch.ChannelPointRedemption):
     bans.handle_redemption(redemption)
+
+
+@default_rig.eventsub_client.channel_point_redemption("TTS Message")
+def handle_tts(redemption: Twitch.ChannelPointRedemption):
     tts.handle_redemption(redemption)
 
 
