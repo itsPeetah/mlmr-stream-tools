@@ -1,11 +1,9 @@
-import asyncio
 from dataclasses import dataclass
 import webbrowser
-import threading
-from flask import Flask, request
+from flask import request
 import requests
 
-from src.webapp.webapp import WebApp
+from ..webapp import WebApp
 
 
 @dataclass

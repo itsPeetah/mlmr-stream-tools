@@ -1,12 +1,12 @@
 from os import getenv
-import threading
 
 from dotenv import load_dotenv
-from flask import Flask, Response, jsonify, request
+from flask import jsonify, request
 from flask_socketio import emit, send
 
-from src import Twitch, FlaskApp
-from src.channelpoints import bounties as Bounties, tts as TTS
+from src.core import Twitch, FlaskApp
+from src.core.defaultrig import DefaultRig, DefaultRigSettings
+from src.extensions import ChannelPoints
 
 load_dotenv()
 
@@ -44,43 +44,52 @@ eventsub_settings = Twitch.TwitchEventSubSettings(
 
 ## INITIALIZATION ##
 
-
-webapp = FlaskApp.WebApp(webapp_settings)
-auth_client = Twitch.TwitchOAuthClient(auth_settings)
-irc_client = Twitch.TwitchIRCClient(irc_settings)
-api_client = Twitch.TwitchAPIClient(api_settings)
-eventsub_client = Twitch.TwitchEventSubClient(eventsub_settings)
-
-auth_client.attach_to_flask_app(webapp)
+default_rig = DefaultRig(
+    DefaultRigSettings(
+        web_app_settings=webapp_settings,
+        twitch_auth_settings=auth_settings,
+        twitch_irc_settings=irc_settings,
+        twitch_api_settings=api_settings,
+        twitch_eventsub_settings=eventsub_settings,
+    )
+)
 
 ## FLASK APP SETUP
 
 
-@webapp.flask_app.get("/hello")
+@default_rig.webapp.flask_app.get("/hello")
 def hello():
     return "Hello, world!"
 
 
 ## TWITCH HANDLERS ##
 
-bounties = Bounties.BountyTracker("In-Game Bounty", "BOUNTY", "./tmp/bounties.tsv")
-bans = Bounties.BountyTracker("In-Game Ban", "BAN", "./tmp/bans.tsv")
-tts = TTS.ScuffedTTS("TTS Message", "./tmp/ttslog.tsv", "./tmp/latest.mp3")
+bounties = ChannelPoints.bounties.BountyTracker(
+    "In-Game Bounty", "BOUNTY", "./tmp/bounties.tsv"
+)
+bans = ChannelPoints.bounties.BountyTracker("In-Game Ban", "BAN", "./tmp/bans.tsv")
+tts = ChannelPoints.tts.ScuffedTTS(
+    "TTS Message", "./tmp/ttslog.tsv", "./tmp/latest.mp3"
+)
 
 
+@default_rig.irc_client.on_message()
 def on_chat_msg(msg: Twitch.TwitchIRCMessage):
     print(f"Message from {msg.sender}: {msg.content}---")
     if msg.content.strip() == "!hi":
-        irc_client.send_message_to_chat(f"Hello, {msg.sender}!")
+        default_rig.irc_client.send_message_to_chat(f"Hello, {msg.sender}!")
 
 
+@default_rig.eventsub_client.channel_point_redemption()
 def on_channel_point_redemption(redemption: Twitch.ChannelPointRedemption):
     bounties.handle_redemption(redemption)
     bans.handle_redemption(redemption)
     tts.handle_redemption(redemption)
 
 
-@webapp.flask_app.get("/channelpoints/bounties")  # ?type=<bounties?, bans, both>
+@default_rig.webapp.flask_app.get(
+    "/channelpoints/bounties"
+)  # ?type=<bounties?, bans, both>
 def fetch_bounties():
     """this could be a ws event"""
 
@@ -103,7 +112,7 @@ def fetch_bounties():
     return jsonify({"bounties": result})
 
 
-@webapp.flask_app.get("/scuffedtts/latest")
+@default_rig.webapp.flask_app.get("/scuffedtts/latest")
 def fetch_tts():
     """this could be a ws event"""
 
@@ -111,13 +120,13 @@ def fetch_tts():
     return jsonify({"data": result})
 
 
-@webapp.socketio.on("message")
+@default_rig.webapp.socketio.on("message")
 def handle_message(msg):
     print(f"Received message: {msg}")
     send(f"Server received: {msg}", broadcast=True)
 
 
-@webapp.socketio.on("custom_event")
+@default_rig.webapp.socketio.on("custom_event")
 def handle_custom_event(data):
     print(f"Custom event data: {data}")
     emit("response_event", {"data": f"Hello {data['name']}!"})
@@ -127,15 +136,7 @@ def handle_custom_event(data):
 
 
 def main():
-    webapp.start()
-
-    # RUN TWITCH
-    access_token = auth_client.get_access_token()
-    irc_client.connect(access_token)
-    eventsub_client.add_channel_point_redemption_listener(on_channel_point_redemption)
-    irc_client.listen_to_chat(on_chat_msg)
-    user_id = api_client.get_user_id(access_token)
-    _ = eventsub_client.run(access_token, user_id)
+    default_rig.start()
 
 
 if __name__ == "__main__":

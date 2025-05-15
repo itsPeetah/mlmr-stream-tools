@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from gtts import gTTS
-from ..twitch import ChannelPointRedemption
+from ...core.twitch import ChannelPointRedemption
 
 
 @dataclass

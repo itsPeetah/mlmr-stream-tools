@@ -1,4 +1,4 @@
-from ..twitch import ChannelPointRedemption
+from ...core.twitch import ChannelPointRedemption
 
 
 class BountyTracker:
