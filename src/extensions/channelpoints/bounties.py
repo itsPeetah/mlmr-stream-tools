@@ -1,4 +1,4 @@
-from ...core.twitch import ChannelPointRedemption
+from ...core.twitch.lib import TwitchEventSub
 
 
 class BountyTracker:
@@ -7,7 +7,7 @@ class BountyTracker:
         self.prefix = prefix
         self.filepath = filepath
 
-    def handle_redemption(self, red: ChannelPointRedemption):
+    def handle_redemption(self, red: TwitchEventSub.ChannelPointRedemption):
         if red.reward_name != self.redemption_title:
             return
 

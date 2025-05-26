@@ -5,7 +5,7 @@ import types
 
 
 @dataclass
-class TwitchIRCSettings:
+class IRCSettings:
     hostname: str
     port: int
     bot_nick: str
@@ -13,13 +13,13 @@ class TwitchIRCSettings:
 
 
 @dataclass
-class TwitchIRCMessage:
+class IRCMessage:
     sender: str
     content: str
 
 
-class TwitchIRCClient:
-    def __init__(self, settings: TwitchIRCSettings):
+class IRCClient:
+    def __init__(self, settings: IRCSettings):
         self._settings = settings
         self._sock = None
         self._listen_thread = None
@@ -65,13 +65,13 @@ class TwitchIRCClient:
                     username = resp.split("!", 1)[0][1:]
                     message = resp.split("PRIVMSG", 1)[1].split(":", 1)[1]
                     if len(message) >= 1:
-                        self._handle_message(TwitchIRCMessage(username, message))
+                        self._handle_message(IRCMessage(username, message))
 
         self._listen_thread = threading.Thread(target=listen_handler)
         self._listen_thread.setDaemon(daemon)
         self._listen_thread.start()
 
-    def _handle_message(self, msg: TwitchIRCMessage):
+    def _handle_message(self, msg: IRCMessage):
         first = msg.content.split(" ")[0]
         if first.strip() in self._on_command_listeners:
             for func in self._on_command_listeners[first]:

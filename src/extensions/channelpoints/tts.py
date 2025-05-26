@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from gtts import gTTS
-from ...core.twitch import ChannelPointRedemption
+from ...core.twitch.lib import TwitchEventSub
 
 
 @dataclass
@@ -25,7 +25,7 @@ class ScuffedTTS:
     def remove_listener(self, listener):
         self.listeners.remove(listener)
 
-    def handle_redemption(self, red: ChannelPointRedemption):
+    def handle_redemption(self, red: TwitchEventSub.ChannelPointRedemption):
         if red.reward_name != self.redemption_title:
             return
         print(f"[TTS] {red.user_name} says: {red.user_input}")

@@ -4,13 +4,13 @@ import requests
 
 
 @dataclass
-class TwitchAPISettings:
+class APISettings:
     client_id: str
 
 
-class TwitchAPIClient:
+class APIClient:
 
-    def __init__(self, settings: TwitchAPISettings):
+    def __init__(self, settings: APISettings):
         self.settings = settings
 
     def get_user_id(self, access_token):

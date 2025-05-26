@@ -1,4 +1,2 @@
-from .auth import *
-from .api import *
-from .irc import *
-from .eventsub import *
+from . import lib
+from .client import TwitchRigSettings, TwitchRig

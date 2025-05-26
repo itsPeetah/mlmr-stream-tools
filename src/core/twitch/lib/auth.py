@@ -1,21 +1,19 @@
 from dataclasses import dataclass
 import webbrowser
-from flask import request
+from flask import Flask, request
 import requests
-
-from ..webapp import WebApp
 
 
 @dataclass
-class TwitchOAuthSettings:
+class OAuthSettings:
     client_id: str
     client_secret: str
     redirect_uri: str
     scopes: list[str]
 
 
-class TwitchOAuthClient:
-    def __init__(self, settings: TwitchOAuthSettings):
+class OAuthClient:
+    def __init__(self, settings: OAuthSettings):
         self.settings = settings
         self.auth_code = None
 
@@ -46,11 +44,11 @@ class TwitchOAuthClient:
         response = requests.post(url, data=data)
         return response.json()
 
-    def attach_to_flask_app(self, webapp: WebApp):
+    def attach_to_flask_app(self, flask_app: Flask):
 
         auth_route = self.settings.redirect_uri.split("/")[-1]
 
-        @webapp.flask_app.route(f"/{auth_route}")
+        @flask_app.route(f"/{auth_route}")
         def handle_redirect():
             self.auth_code = request.args.get("code")
             return "Authorization successful! You can close this tab."

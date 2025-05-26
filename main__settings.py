@@ -1,7 +1,8 @@
 from os import getenv
 
 from dotenv import load_dotenv
-from src.core import Twitch, FlaskApp
+from src.core import FlaskApp
+import src.core.twitch.lib as TwitchLib
 
 load_dotenv()
 
@@ -10,7 +11,7 @@ CLIENT_SECRET = getenv("TWITCH_CLIENT_SECRET")
 
 webapp_settings = FlaskApp.WebAppSettings(name=__name__, port=8080)
 
-auth_settings = Twitch.TwitchOAuthSettings(
+auth_settings = TwitchLib.TwitchAuth.OAuthSettings(
     client_id=CLIENT_ID,
     client_secret=CLIENT_SECRET,
     redirect_uri="http://localhost:8080/oauth",
@@ -22,15 +23,15 @@ auth_settings = Twitch.TwitchOAuthSettings(
     ],
 )
 
-irc_settings = Twitch.TwitchIRCSettings(
+irc_settings = TwitchLib.TwitchIrc.IRCSettings(
     hostname="irc.chat.twitch.tv", port=6667, bot_nick="malimore", channel="malimore"
 )
 
-api_settings = Twitch.TwitchAPISettings(
+api_settings = TwitchLib.TwitchApi.APISettings(
     client_id=CLIENT_ID,
 )
 
-eventsub_settings = Twitch.TwitchEventSubSettings(
+eventsub_settings = TwitchLib.TwitchEventSub.EventSubSettings(
     client_id=CLIENT_ID,
     eventsub_ws_url="wss://eventsub.wss.twitch.tv/ws",
 )

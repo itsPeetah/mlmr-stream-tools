@@ -1,2 +1,2 @@
-from . import twitch as Twitch
+from .twitch import *
 from . import webapp as FlaskApp

@@ -1,28 +1,19 @@
 from flask import jsonify, request
 from flask_socketio import emit, send
 
-from src.core import Twitch
-from src.core.defaultrig import DefaultRig, DefaultRigSettings
+from src.core.twitch import TwitchRig, TwitchRigSettings
+from src.core.twitch.lib import *
 from src.extensions import ChannelPoints
 from main__settings import *
 
-default_rig = DefaultRig(
-    DefaultRigSettings(
-        web_app_settings=webapp_settings,
+twitch_rig = TwitchRig(
+    TwitchRigSettings(
         twitch_auth_settings=auth_settings,
         twitch_irc_settings=irc_settings,
         twitch_api_settings=api_settings,
         twitch_eventsub_settings=eventsub_settings,
     )
 )
-
-## FLASK APP SETUP
-
-
-@default_rig.webapp.flask_app.get("/hello")
-def hello():
-    return "Hello, world!"
-
 
 ## TWITCH HANDLERS ##
 
@@ -35,82 +26,37 @@ tts = ChannelPoints.tts.ScuffedTTS(
 )
 
 
-@default_rig.irc_client.on_message()
-def on_chat_msg(msg: Twitch.TwitchIRCMessage):
+@twitch_rig.irc_client.on_message()
+def on_chat_msg(msg: TwitchIrc.IRCMessage):
     print(f"Message from {msg.sender}: {msg.content}---")
 
 
-@default_rig.irc_client.on_command("!hi")
-def on_hi_command(msg: Twitch.TwitchIRCMessage):
+@twitch_rig.irc_client.on_command("!hi")
+def on_hi_command(msg: TwitchIrc.IRCMessage):
     print(f"Command from {msg.sender}: {msg.content}---")
-    default_rig.irc_client.send_message_to_chat(f"Hello, {msg.sender}!")
+    twitch_rig.irc_client.send_message_to_chat(f"Hello, {msg.sender}!")
 
 
-@default_rig.eventsub_client.channel_point_redemption("In-Game Bounty")
-def handle_bounties(redemption: Twitch.ChannelPointRedemption):
+@twitch_rig.eventsub_client.channel_point_redemption("In-Game Bounty")
+def handle_bounties(redemption: TwitchEventSub.ChannelPointRedemption):
     bounties.handle_redemption(redemption)
 
 
-@default_rig.eventsub_client.channel_point_redemption("In-Game Ban")
-def handle_bans(redemption: Twitch.ChannelPointRedemption):
+@twitch_rig.eventsub_client.channel_point_redemption("In-Game Ban")
+def handle_bans(redemption: TwitchEventSub.ChannelPointRedemption):
     bans.handle_redemption(redemption)
 
 
-@default_rig.eventsub_client.channel_point_redemption("TTS Message")
-def handle_tts(redemption: Twitch.ChannelPointRedemption):
+@twitch_rig.eventsub_client.channel_point_redemption("TTS Message")
+def handle_tts(redemption: TwitchEventSub.ChannelPointRedemption):
     tts.handle_redemption(redemption)
-
-
-@default_rig.webapp.flask_app.get(
-    "/channelpoints/bounties"
-)  # ?type=<bounties?, bans, both>
-def fetch_bounties():
-    """this could be a ws event"""
-
-    result = []
-    if "type" in request.args:
-        request_type = request.args["type"]
-        match request_type:
-            case "bans":
-                result = bans.get_bounties()
-            case "both":
-                result = bounties.get_bounties() + bans.get_bounties()
-            # case "bounties":
-            case _:
-                result = bounties.get_bounties()
-    else:
-        result = bounties.get_bounties()
-
-    result = sorted(result, key=lambda x: x.split("\t")[-1])
-
-    return jsonify({"bounties": result})
-
-
-@default_rig.webapp.flask_app.get("/scuffedtts/latest")
-def fetch_tts():
-    """this could be a ws event"""
-
-    result = tts.get_latest_fifo()
-    return jsonify({"data": result})
-
-
-@default_rig.webapp.socketio.on("message")
-def handle_message(msg):
-    print(f"Received message: {msg}")
-    send(f"Server received: {msg}", broadcast=True)
-
-
-@default_rig.webapp.socketio.on("custom_event")
-def handle_custom_event(data):
-    print(f"Custom event data: {data}")
-    emit("response_event", {"data": f"Hello {data['name']}!"})
 
 
 ## MAIN ##
 
 
 def main():
-    default_rig.start()
+    twitch_rig.start()
 
 
 if __name__ == "__main__":

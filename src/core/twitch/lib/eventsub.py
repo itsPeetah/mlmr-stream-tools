@@ -7,7 +7,7 @@ import websockets
 
 
 @dataclass
-class TwitchEventSubSettings:
+class EventSubSettings:
     client_id: str
     eventsub_ws_url: str
 
@@ -23,12 +23,12 @@ class ChannelPointRedemption:
     timestamp: str
 
 
-class TwitchEventSubClient:
+class EventSubClient:
     EVENT_TYPE_CHANNEL_POINT_REDEMPTION = (
         "channel.channel_points_custom_reward_redemption.add"
     )
 
-    def __init__(self, settings: TwitchEventSubSettings):
+    def __init__(self, settings: EventSubSettings):
         self._settings = settings
         self._stop_queued = False
         self._event_handlers = {}
@@ -55,14 +55,14 @@ class TwitchEventSubClient:
     def channel_point_redemption(self, reward_title: str):
         def decorator(func):
             if (
-                TwitchEventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION
+                EventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION
                 not in self._event_handlers
             ):
                 self._event_handlers[
-                    TwitchEventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION
+                    EventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION
                 ] = []
             self._event_handlers[
-                TwitchEventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION
+                EventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION
             ].append((reward_title, func))
             return func
 
@@ -102,7 +102,7 @@ class TwitchEventSubClient:
         sub_type = data["metadata"]["subscription_type"]
         event = data["payload"]["event"]
         match sub_type:
-            case TwitchEventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION:
+            case EventSubClient.EVENT_TYPE_CHANNEL_POINT_REDEMPTION:
                 print(
                     f"[EventSub - Channel Points] {event['user_name']} redeemed {event['reward']['title']}"
                 )
